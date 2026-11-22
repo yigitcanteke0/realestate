@@ -189,7 +189,7 @@ function onSubmit(e) {
   try {
     switch (form.dataset.form) {
       case 'criterion': {
-        const c = readCriterionForm(fd);
+        const c = readCriterionForm(fd, state.settings.refPoints);
         const i = state.criteria.findIndex((x) => x.id === c.id);
         state.criteria = i >= 0 ? state.criteria.map((x) => (x.id === c.id ? c : x)) : [...state.criteria, c];
         ui.draft = null;

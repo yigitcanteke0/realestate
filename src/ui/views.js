@@ -1,5 +1,6 @@
 import { esc, safeUrl, attrs, options } from './html.js';
 import { FACT_CATALOG, OPTION_LABELS } from '../core/facts.js';
+import { factValue } from '../core/evaluate.js';
 
 export const UNKNOWN = 'İlanda belirtilmemiş / bilgi alınamadı';
 
@@ -22,8 +23,13 @@ function factLine(label, value) {
   return `<div class="fact"><span class="fact-k">${esc(label)}</span><span class="fact-v">${esc(value)}</span></div>`;
 }
 
-function knownFacts(f) {
+function knownFacts(l, settings) {
+  const f = l.facts ?? {};
   const out = [];
+  for (const r of settings.refPoints ?? []) {
+    const min = factValue(l, `distance:${r.id}`, settings.refPoints);
+    if (min !== null) out.push(factLine(r.name, `~${min} dk yürüme (tahmini)`));
+  }
   if (f.type) out.push(factLine('Tip', optLabel(f.type)));
   if (f.billsIncluded !== null) out.push(factLine('Faturalar', f.billsIncluded ? 'Dahil' : 'Hariç'));
   if (f.furnished !== null) out.push(factLine('Eşya', f.furnished ? 'Eşyalı' : 'Eşyasız'));
@@ -66,7 +72,7 @@ export function renderCard(l, ev, settings) {
   <div class="body">
     <header><h3>${esc(l.title)}</h3><p class="price ${price === '!' ? 'unknown' : ''}">${esc(price)}${price === '!' ? ` <small>${UNKNOWN}</small>` : '<small>/ay</small>'}</p></header>
     ${savings}
-    <div class="facts">${knownFacts(f)}</div>
+    <div class="facts">${knownFacts(l, settings)}</div>
     ${unknowns.length ? `<ul class="unknowns">${unknowns.map((u) => `<li><b>!</b> ${esc(u.name)}: ${UNKNOWN}</li>`).join('')}</ul>` : ''}
     ${reasons}
     ${breakdown}
@@ -107,10 +113,12 @@ export function renderEliminated(items, settings) {
   return cards([...items].sort(SORTERS.date), settings);
 }
 
-function factChoices(settings) {
+function factChoices(settings, current) {
   const base = Object.entries(FACT_CATALOG).map(([k, d]) => [k, d.label]);
   const dist = (settings.refPoints ?? []).map((r) => [`distance:${r.id}`, `${r.name}'e uzaklık (dk)`]);
-  return [...base, ...dist];
+  const all = [...base, ...dist];
+  if (current && !all.some(([k]) => k === current)) all.push([current, 'Silinmiş nokta (başka bir bilgi seç)']);
+  return all;
 }
 
 function valueInput(fact, draft) {
@@ -155,7 +163,7 @@ export function renderPreferences(criteria, settings, draft = null) {
   <h3>${draft?.id ? 'Kriteri düzenle' : 'Kriter ekle'}</h3>
   ${draft?.id ? `<input type="hidden" name="id" value="${esc(draft.id)}">` : ''}
   <label>Ad<input ${attrs({ name: 'name', required: true, value: draft?.name ?? '', placeholder: 'Örn. Bütçem' })}></label>
-  <label>İlan bilgisi<select name="fact" data-action="draft-fact">${options(factChoices(settings), fact)}</select></label>
+  <label>İlan bilgisi<select name="fact" data-action="draft-fact">${options(factChoices(settings, fact), fact)}</select></label>
   <label>Koşul<select name="op">${options(OPS_BY_KIND[kind].map((o) => [o, OP_LABELS[o]]), draft?.op)}</select></label>
   ${valueInput(fact, draft)}
   <label>Ne yapsın<select name="behavior">${options(Object.entries(BEHAVIOR_LABELS), draft?.behavior ?? 'score')}</select></label>
@@ -215,10 +223,12 @@ function parseNumber(s) {
   return n;
 }
 
-export function readCriterionForm(form) {
+export function readCriterionForm(form, refPoints = null) {
   const name = String(form.get('name') ?? '').trim();
   if (!name) throw new Error('Ad gerekli');
   const fact = String(form.get('fact') || 'priceMonthly');
+  if (refPoints && fact.startsWith('distance:') && !refPoints.some((r) => `distance:${r.id}` === fact))
+    throw new Error('Bu referans noktası silinmiş. Başka bir nokta ya da bilgi seç.');
   const kind = kindOf(fact);
   const raw = form.get('value') ?? '';
   let value;

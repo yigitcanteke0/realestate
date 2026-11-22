@@ -7,7 +7,7 @@ const S = (o = {}) => ({ senders: ['a@x.it', 'b@y.it'], refPoints: [], currentRe
 test('query: no senders → null', () => assert.equal(buildGmailQuery([], null), null));
 test('query with since minus one day', () => {
   assert.equal(buildGmailQuery(['a@x.it', 'b@y.it'], '2026-11-21T08:00:00Z'), 'from:(a@x.it OR b@y.it) after:2026/11/20');
-  assert.equal(buildGmailQuery(['a@x.it'], null), 'from:(a@x.it)');
+
 });
 
 function fakeCall(threads) {
@@ -32,8 +32,16 @@ test('no senders → [] and no tool call', async () => {
 test('skips processed ids and non-matching senders', async () => {
   const call = fakeCall([{ id: 't1', messages: [msg('m1', 'Subito <A@x.it>'), msg('m2', 'a@x.it'), msg('m3', 'friend@z.it')] }]);
   const out = await fetchNewEmails(call, S(), new Set(['m2']));
-  assert.deepEqual(out, [{ id: 'm1', subject: 'Nuovi annunci', from: 'Subito <A@x.it>', date: '2026-11-22T07:00:00Z', body: 'body m1' }]);
+  assert.deepEqual(out, [{ id: 'm1', subject: 'Nuovi annunci', from: 'Subito <A@x.it>', date: '2026-11-22T07:00:00.000Z', body: 'body m1' }]);
   assert.equal(call.calls[0].server, 'Gmail');
   assert.equal(call.calls[0].input.pageSize, 50);
   assert.deepEqual(call.calls[1].input, { threadId: 't1', messageFormat: 'PLAIN_TEXT' });
+});
+
+test('first run is limited to the last 30 days', () => assert.equal(buildGmailQuery(['a@x.it'], null), 'from:(a@x.it) newer_than:30d'));
+
+test('RFC 2822 dates normalised to ISO', async () => {
+  const call = fakeCall([{ id: 't1', messages: [{ ...msg('m1', 'a@x.it'), date: 'Fri, 20 Nov 2026 07:00:00 +0000' }] }]);
+  const [e] = await fetchNewEmails(call, S(), new Set());
+  assert.equal(e.date, '2026-11-20T07:00:00.000Z');
 });

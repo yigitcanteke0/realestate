@@ -79,3 +79,26 @@ test('same listing in a later email merges, not duplicates', async () => {
   assert.equal(r.newCount, 0);
   assert.equal(s.state.listings.length, 1);
 });
+
+test('rate_limited stops the loop, rethrows, keeps lastRefreshAt', async () => {
+  const s = await setup([m('m1'), m('m2'), m('m3')]);
+  let n = 0;
+  s.deps.sampleJson = async (p) => { n++; if (n === 2) throw { code: 'rate_limited', message: 'slow' }; return extraction(p); };
+  await assert.rejects(runRefresh(s.deps), (e) => e.code === 'rate_limited');
+  assert.equal(n, 2);
+  assert.equal(s.state.settings.lastRefreshAt, null);
+  assert.ok(s.state.processedIds.has('m1') && !s.state.processedIds.has('m2'));
+  assert.equal(s.state.listings.length, 1);
+});
+
+test('not_granted rethrows too', async () => {
+  const s = await setup([m('m1')]);
+  s.deps.sampleJson = async () => { throw { code: 'not_granted', message: 'no' }; };
+  await assert.rejects(runRefresh(s.deps), (e) => e.code === 'not_granted');
+});
+
+test('other failure: lastRefreshAt not later than oldest failed email', async () => {
+  const s = await setup([{ ...m('m1'), date: '2026-11-10T07:00:00Z' }, m('m2')], { fail: 'L m1' });
+  await runRefresh(s.deps);
+  assert.equal(s.state.settings.lastRefreshAt, '2026-11-10T07:00:00.000Z');
+});

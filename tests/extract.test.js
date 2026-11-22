@@ -60,3 +60,7 @@ test('prompt contains truncated body and JSON schema keys', () => {
   for (const k of ['listings', 'priceMonthly', 'genderPref', 'women_only', 'evidence', 'approxCoords', 'solo ragazze', 'per sole studentesse', 'preferibilmente'])
     assert.ok(p.includes(k), k);
 });
+
+test('prompt asks for the final listing URL, not a tracking redirect', () => {
+  assert.ok(buildExtractionPrompt({ subject: '', from: '', body: '' }).includes('not a click-tracking redirect'));
+});

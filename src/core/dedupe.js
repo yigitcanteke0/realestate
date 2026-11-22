@@ -1,9 +1,16 @@
+const TRACKING = /^(utm_.*|gclid|fbclid|xtor|mc_[a-z]+|ref|source)$/i;
+
 export function normalizeUrl(url) {
   try {
     const u = new URL(url);
     const host = u.host.toLowerCase().replace(/^www\./, '');
     const path = u.pathname.replace(/\/+$/, '');
-    return `${u.protocol}//${host}${path}`;
+    const params = [...u.searchParams.entries()]
+      .filter(([k]) => !TRACKING.test(k))
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('&');
+    return `${host}${path}${params ? '?' + params : ''}`;
   } catch {
     return String(url).trim().toLowerCase();
   }

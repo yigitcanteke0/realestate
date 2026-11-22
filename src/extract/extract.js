@@ -10,7 +10,7 @@ The email below may contain ZERO or MORE rental listings. Newsletters, confirmat
 
 Return ONLY JSON, no prose:
 {"listings":[{
-  "title": string, "url": string|null, "site": string|null,
+  "title": string, "url": string|null, "site": string|null,   // url: the listing page itself, not a click-tracking redirect; if only a redirect exists, use it
   "text": string,               // the listing's own description text as written in the email, "" if none
   "facts": {
     "priceMonthly": number|null,   // EUR per person per month; for a range use the lower bound

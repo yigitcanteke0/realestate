@@ -96,3 +96,18 @@ test('readCriterionForm rejects missing name or bad number', () => {
   assert.throws(() => readCriterionForm(form({ fact: 'priceMonthly', op: 'lte', value: '1' })), /Ad/);
   assert.throws(() => readCriterionForm(form({ name: 'x', fact: 'priceMonthly', op: 'lte', value: 'abc' })), /sayı/);
 });
+
+test('card shows walking minutes per ref point, labelled tahmini', () => {
+  const s = S({ refPoints: [{ id: 'm', name: 'Merkez', lat: 41.4917, lng: 13.8311 }] });
+  const h = renderCard(L({}, { coords: { lat: 41.4917, lng: 13.8411, method: 'geocoder' } }), EV(), s, []);
+  assert.match(h, /Merkez[^<]*<\/span><span class="fact-v">~\d+ dk yürüme \(tahmini\)/);
+  assert.ok(!renderCard(L(), EV(), s, []).includes('dk yürüme'));
+});
+
+test('editing a criterion with a deleted ref point keeps the fact and blocks saving', () => {
+  const h = renderPreferences([], S(), { id: 'c9', name: 'Yakın', fact: 'distance:gone', op: 'lte', value: 10 });
+  assert.ok(h.includes('value="distance:gone" selected'));
+  assert.ok(h.includes('Silinmiş nokta'));
+  assert.throws(() => readCriterionForm(form({ name: 'Yakın', fact: 'distance:gone', op: 'lte', value: '10' }), []), /nokta/);
+  assert.equal(readCriterionForm(form({ name: 'Yakın', fact: 'distance:m', op: 'lte', value: '10' }), [{ id: 'm' }]).fact, 'distance:m');
+});

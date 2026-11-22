@@ -32,3 +32,10 @@ test('merge with no existing returns incoming', () => {
   const inc = { id: 'i', ...base() };
   assert.deepEqual(mergeListing(undefined, inc), inc);
 });
+
+test('different query ids stay different; tracking params and protocol ignored', () => {
+  assert.notEqual(normalizeUrl('https://clicks.immobiliare.it/ls/click?upn=AAA'), normalizeUrl('https://clicks.immobiliare.it/ls/click?upn=BBB'));
+  assert.notEqual(normalizeUrl('https://x.it/a?idAnnuncio=1'), normalizeUrl('https://x.it/a?idAnnuncio=2'));
+  assert.equal(normalizeUrl('http://x.it/a?id=1&utm_source=m&gclid=z&xtor=q'), normalizeUrl('https://www.x.it/a?id=1'));
+  assert.equal(normalizeUrl('https://x.it/a?b=2&a=1'), normalizeUrl('https://x.it/a?a=1&b=2'));
+});

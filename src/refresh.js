@@ -6,6 +6,8 @@ import { geocode } from './extract/geocode.js';
 const NOMINATIM_GAP_MS = 1100; // Nominatim usage policy: max 1 request/second
 const realDelay = (ms) => new Promise((r) => setTimeout(r, ms));
 
+const STOP_CODES = new Set(['rate_limited', 'not_granted', 'capability_disabled', 'capability_removed']);
+
 let inFlight = null;
 
 export function runRefresh(deps) {
@@ -16,6 +18,7 @@ export function runRefresh(deps) {
 async function doRefresh({ callTool, sampleJson, fetchFn, repo, state, onProgress = () => {}, delay = realDelay }) {
   const errors = [];
   let newCount = 0;
+  let oldestFailed = null;
   onProgress({ phase: 'gmail' });
   const emails = await fetchNewEmails(callTool, state.settings, state.processedIds);
   const byId = new Map(state.listings.map((l) => [l.id, l]));
@@ -40,12 +43,21 @@ async function doRefresh({ callTool, sampleJson, fetchFn, repo, state, onProgres
       await repo.markProcessed([email.id]);
       state.processedIds.add(email.id);
     } catch (e) {
+      if (STOP_CODES.has(e?.code)) {
+        // Claude refused or throttled: stop now, keep the window open, let the UI explain.
+        state.listings = [...byId.values()];
+        throw e;
+      }
       errors.push(`${email.subject || email.id}: ${e?.message ?? e?.code ?? e}`);
+      if (!oldestFailed || email.date < oldestFailed) oldestFailed = email.date;
     }
   }
 
   state.listings = [...byId.values()];
-  state.settings = { ...state.settings, lastRefreshAt: new Date().toISOString() };
+  const now = new Date().toISOString();
+  // A failed email must stay inside the next query window (which starts 1 day before lastRefreshAt).
+  const lastRefreshAt = oldestFailed && oldestFailed < now ? new Date(oldestFailed).toISOString() : now;
+  state.settings = { ...state.settings, lastRefreshAt };
   await repo.saveSettings(state.settings);
   onProgress({ phase: 'done' });
   return { newCount, emailCount: emails.length, errors };
