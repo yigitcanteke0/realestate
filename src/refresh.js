@@ -31,7 +31,7 @@ async function doRefresh({ callTool, sampleJson, fetchFn, repo, state, onProgres
         const incoming = { id: listingId(partial), ...partial };
         const existing = byId.get(incoming.id);
         const merged = mergeListing(existing, incoming);
-        if (merged.facts.address && merged.facts.coords?.method !== 'geocoder') {
+        if (fetchFn && merged.facts.address && merged.facts.coords?.method !== 'geocoder') {
           const c = await geocode(fetchFn, merged.facts.address);
           await delay(NOMINATIM_GAP_MS);
           if (c) merged.facts = { ...merged.facts, coords: c };

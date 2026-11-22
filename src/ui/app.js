@@ -108,7 +108,7 @@ async function doRefresh() {
     const r = await runRefresh({
       callTool: (server, tool, input) => caps.mcp.callTool(server, tool, input),
       sampleJson: (prompt) => caps.sample.json(prompt, { modelTier: 'default' }),
-      fetchFn: (url, init) => fetch(url, init),
+      fetchFn: null, // artifact CSP blocks other hosts; Claude's approximate coordinates are used
       repo, state,
       onProgress: (p) => {
         if (p.phase === 'extract') { ui.refresh.message = `İlanlar okunuyor (${p.done + 1}/${p.total})…`; render(); }

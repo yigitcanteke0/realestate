@@ -102,3 +102,13 @@ test('other failure: lastRefreshAt not later than oldest failed email', async ()
   await runRefresh(s.deps);
   assert.equal(s.state.settings.lastRefreshAt, '2026-11-10T07:00:00.000Z');
 });
+
+test('no fetchFn → no geocoding and no delay, claude coords kept', async () => {
+  const s = await setup([m('m1')]);
+  let waited = 0;
+  s.deps.fetchFn = null;
+  s.deps.delay = async () => { waited++; };
+  await runRefresh(s.deps);
+  assert.equal(waited, 0);
+  assert.equal(s.state.listings[0].facts.coords.method, 'claude');
+});
