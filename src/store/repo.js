@@ -34,7 +34,9 @@ export function createRepo(db, userId) {
       const [listSnap, crit, settings, dec, proc] = await Promise.all([
         items().get(), read('criteria', { items: [] }), read('settings', {}), read('decisions', { map: {} }), read('processed', { ids: [] }),
       ]);
-      decisions = { ...(dec.map ?? {}) };
+      // Stored as { [docIdFor(listingId)]: { id, d } } so map keys never contain '/', '.', etc.
+      decisions = {};
+      for (const v of Object.values(dec.map ?? {})) if (v && v.id && v.d) decisions[v.id] = v.d;
       processed = [...(proc.ids ?? [])];
       return {
         listings: listSnap.docs.map((d) => d.data()),
@@ -50,7 +52,9 @@ export function createRepo(db, userId) {
     async setDecision(listingId, d) {
       if (d) decisions[listingId] = d;
       else delete decisions[listingId];
-      await cfg('decisions').set({ map: { ...decisions } });
+      const map = {};
+      for (const [id, dd] of Object.entries(decisions)) map[docIdFor(id)] = { id, d: dd };
+      await cfg('decisions').set({ map });
     },
     async markProcessed(ids) {
       const set = new Set(processed);

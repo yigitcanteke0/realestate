@@ -53,3 +53,13 @@ test('data lives under data/users/<uid>/', async () => {
   await r.saveCriteria([]);
   for (const k of db._store.keys()) assert.ok(k.startsWith('data/users/u1/'), k);
 });
+
+test('stored decision keys are grammar-safe', async () => {
+  const db = fakeDb();
+  const r = createRepo(db, 'u1');
+  await r.loadAll();
+  await r.setDecision('u:subito.it/a/b?id=1', 'kept');
+  const stored = db._store.get('data/users/u1/decisions').map;
+  for (const k of Object.keys(stored)) assert.match(k, /^[A-Za-z0-9_-]+$/);
+  assert.deepEqual((await createRepo(db, 'u1').loadAll()).decisions, { 'u:subito.it/a/b?id=1': 'kept' });
+});
