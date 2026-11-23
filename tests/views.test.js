@@ -111,3 +111,9 @@ test('editing a criterion with a deleted ref point keeps the fact and blocks sav
   assert.throws(() => readCriterionForm(form({ name: 'Yakın', fact: 'distance:gone', op: 'lte', value: '10' }), []), /nokta/);
   assert.equal(readCriterionForm(form({ name: 'Yakın', fact: 'distance:m', op: 'lte', value: '10' }), [{ id: 'm' }]).fact, 'distance:m');
 });
+
+test('sender suggestions are site domains, not guessed addresses', () => {
+  const h = renderSources(S(), { running: false });
+  assert.ok(h.includes('data-value="immobiliare.it"'));
+  assert.ok(!h.includes('noreply@immobiliare.it'));
+});

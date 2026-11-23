@@ -190,7 +190,7 @@ export function renderPreferences(criteria, settings, draft = null) {
   return `<section class="panel"><h2>Kriterlerim</h2>${list}</section><section class="panel">${form}</section>${refs}${rent}`;
 }
 
-const SENDER_EXAMPLES = ['noreply@immobiliare.it', 'noreply@idealista.it', 'noreply@subito.it'];
+const SENDER_EXAMPLES = ['immobiliare.it', 'idealista.it', 'subito.it'];
 
 export function renderSources(settings, status) {
   const senders = settings.senders ?? [];
@@ -203,8 +203,8 @@ export function renderSources(settings, status) {
 </section>
 <section class="panel"><h3>İlan bildirimi gönderen adresler</h3>
   ${senders.length ? `<ul class="refs">${senders.map((s) => `<li><span>${esc(s)}</span><button ${attrs({ class: 'btn ghost danger', 'data-action': 'delete-sender', 'data-value': s })}>Sil</button></li>`).join('')}</ul>` : '<p class="hint">Henüz adres yok. Yalnızca bu adreslerden gelen e-postalar okunur.</p>'}
-  <form class="inline-form" data-form="sender"><input name="sender" type="text" placeholder="adres@site.it" required><button class="btn" type="submit">Ekle</button></form>
-  <p class="hint">Örnekler, eklemek için dokun. Gerçek adresi bildirim e-postasının "Kimden" satırından kontrol et:</p>
+  <form class="inline-form" data-form="sender"><input name="sender" type="text" placeholder="site.it ya da adres@site.it" required><button class="btn" type="submit">Ekle</button></form>
+  <p class="hint">Sitenin alan adını eklemen yeterli. O siteden ve alt adreslerinden (ör. noreply@notifiche.immobiliare.it) gelen e-postalar okunur. Eklemek için dokun:</p>
   <div class="chips">${SENDER_EXAMPLES.filter((s) => !senders.includes(s)).map((s) => `<button ${attrs({ class: 'chip', 'data-action': 'add-sender', 'data-value': s })}>${esc(s)}</button>`).join('')}</div>
 </section>
 <section class="panel"><h3>Bildirim nasıl kurulur</h3>

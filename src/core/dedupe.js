@@ -19,8 +19,19 @@ export function normalizeUrl(url) {
 const slug = (s) =>
   String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
+// Alert emails wrap links in per-email click trackers (e.g. clicks.immobiliare.it/f/a/<token>),
+// so the same listing gets a different URL in every email: identify those by title + price.
+const TRACKER_HOST = /^(clicks?|links?|email|trk|track(ing)?)\.|\.go\.link$/i;
+export function isTrackingUrl(url) {
+  try {
+    return TRACKER_HOST.test(new URL(url).host);
+  } catch {
+    return false;
+  }
+}
+
 export function listingId(l) {
-  if (l.url) return 'u:' + normalizeUrl(l.url);
+  if (l.url && !isTrackingUrl(l.url)) return 'u:' + normalizeUrl(l.url);
   return `t:${slug(l.title)}:${l.facts?.priceMonthly ?? 'x'}`;
 }
 
