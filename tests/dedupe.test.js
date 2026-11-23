@@ -39,3 +39,11 @@ test('different query ids stay different; tracking params and protocol ignored',
   assert.equal(normalizeUrl('http://x.it/a?id=1&utm_source=m&gclid=z&xtor=q'), normalizeUrl('https://www.x.it/a?id=1'));
   assert.equal(normalizeUrl('https://x.it/a?b=2&a=1'), normalizeUrl('https://x.it/a?a=1&b=2'));
 });
+
+test('click-tracking URLs fall back to title+price id so the same listing merges across emails', () => {
+  const a = base({ title: '2-room flat via Lombardia, Centro, Cassino', url: 'https://clicks.immobiliare.it/f/a/9drSRq~~/AAAHahA~/GIDs3U', facts: { priceMonthly: 400 } });
+  const b = base({ title: '2-room flat via Lombardia, Centro, Cassino', url: 'https://clicks.immobiliare.it/f/a/XYZ~~/AAAHahA~/OTHER', facts: { priceMonthly: 400 } });
+  assert.equal(listingId(a), listingId(b));
+  assert.ok(listingId(a).startsWith('t:'));
+  assert.ok(listingId(base({ url: 'https://www.immobiliare.it/annunci/123/' })).startsWith('u:'));
+});

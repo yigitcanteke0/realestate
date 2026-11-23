@@ -45,3 +45,9 @@ test('RFC 2822 dates normalised to ISO', async () => {
   const [e] = await fetchNewEmails(call, S(), new Set());
   assert.equal(e.date, '2026-11-20T07:00:00.000Z');
 });
+
+test('a bare domain sender matches its notification subdomain', async () => {
+  const call = fakeCall([{ id: 't1', messages: [msg('m1', 'noreply@notifiche.immobiliare.it')] }]);
+  const out = await fetchNewEmails(call, S({ senders: ['immobiliare.it'] }), new Set());
+  assert.equal(out.length, 1);
+});
